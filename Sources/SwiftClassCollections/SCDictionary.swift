@@ -231,7 +231,15 @@ extension SCDictionary: CustomReflectable {
 }
 
 // MARK: - Conformance -- SMutableDictionary
-extension SCDictionary: SMutableDictionary { }
+extension SCDictionary: SMutableDictionary {
+    public convenience init<D>(_ dictionary: D) where D: SDictionary, D.Key == Key, D.Value == Value {
+        self.init()
+        self.reserveCapacity(dictionary.count)
+        for (k,v) in dictionary {
+            self[k] = v
+        }
+    }
+}
 
 
 // MARK: - Conditional conformance

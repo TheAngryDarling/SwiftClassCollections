@@ -750,7 +750,15 @@ extension SCArrayOrderedDictionary: CustomStringConvertible {
 }
 
 // MARK: - Conformance -- SMutableArray
-extension SCArrayOrderedDictionary: SMutableDictionary { }
+extension SCArrayOrderedDictionary: SMutableDictionary {
+    public convenience init<D>(_ dictionary: D) where D : SDictionary, Key == D.Key, Value == D.Value {
+        self.init()
+        self.reserveCapacity(dictionary.count)
+        for (k,v) in dictionary {
+            self[k] = v
+        }
+    }
+}
 
 // MARK: - Conditional conformance
 #if swift(>=4.1)
