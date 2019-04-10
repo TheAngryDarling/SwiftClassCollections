@@ -12,7 +12,7 @@ import Foundation
 /*
  Protocol defining a Swift Dictionary.  This is basicaly a Collection with a new name for standardization, adding methods and properties specific to Dictionaries
  */
-public protocol SDictionary: Collection where Element == (key: Key, value: Value)  {
+public protocol SDictionary: Collection, SAnyDictionary where Element == (key: Key, value: Value)  {
     
     associatedtype Key: Hashable
     associatedtype Value
@@ -34,7 +34,20 @@ public protocol SDictionary: Collection where Element == (key: Key, value: Value
     init<S>(uniqueKeysWithValues keysAndValues: S) where S : Sequence, S.Element == (Key, Value)
     init<S>(_ keysAndValues: S,
             uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Element == (Key, Value)
+    init<D>(_ dictionary: D) where D: SDictionary, D.Key == Key, D.Value == Value
     
+}
+
+extension SDictionary {
+    public var keyType: Any.Type { return Key.self }
+    public var valueType: Any.Type { return Value.self }
+    
+    public func item(forKey key: Any) -> Any? {
+        guard let k = key as? Key else {
+            fatalError("Unable to cast '\(key)' to \(Key.self)")
+        }
+        return self[k]
+    }
 }
 
 /*
@@ -53,7 +66,15 @@ public protocol SMutableDictionary: SDictionary where Values: MutableCollection 
 
 
 
-extension Dictionary: SMutableDictionary { }
+extension Dictionary: SMutableDictionary, SAnyDictionary {
+    public init<D>(_ dictionary: D) where D: SDictionary, D.Key == Key, D.Value == Value {
+        self.init()
+        self.reserveCapacity(dictionary.count)
+        for (k,v) in dictionary {
+            self[k] = v
+        }
+    }
+}
 
 
 public func ==<DictA, DictB>(lhs: DictA, rhs: DictB) -> Bool where DictA: SDictionary, DictB: SDictionary, DictA.Key == DictB.Key, DictA.Value == DictB.Value, DictA.Value: Equatable {
