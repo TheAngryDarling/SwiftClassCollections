@@ -17,6 +17,8 @@ These swift collections are classes so they are by reference and can be passed a
 
 ### Protocols
 
+* **SAnyArray** - Basic protocol that defines any Array.  Element type does not matter, but can be retrieved by a property.  Good for working with objects stored in Any form
+* **SAnyDictionary** - Basic protocol that defines any Dictionary.  Key and Value type does not matter, but can be retrieved by properties.  Good for working with objects stored in Any form.
 * **SDictionary** -  A protocol that defines all properties and methods used in read-only Swift Dictionary.  This allows for conditional where clauses to work with different types of dictionaries.  
 * **SMutableDictionary** -  A protocol that defines all properties and methods used in the Swift Mutable Dictionaries. This allows for conditional where clauses to work with different types of dictionaries.
 * **SArray** -  A protocol that defines all properties and methods used in read-only Swift Array.  This allows for conditional where clauses to work with different types of arrays.
