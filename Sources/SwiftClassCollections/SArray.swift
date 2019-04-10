@@ -13,10 +13,17 @@ import Foundation
 /*
  Protocol defining a Swift Array.  This is basicaly a Collection with a new name for standardization
 */
-public protocol SArray: Collection {
+public protocol SArray: Collection, SAnyArray where Index == Int {
     init()
     init<S>(_ s: S) where S : Sequence, Element == S.Element
     init(repeating repeatedValue: Element, count: Int)
+}
+
+extension SArray {
+    public var elementType: Any.Type { return Element.self }
+    public func item(at index: Int) -> Any {
+        return self[index]
+    }
 }
 
 
@@ -25,11 +32,7 @@ public protocol SArray: Collection {
 */
 public protocol SMutableArray: SArray, MutableCollection, RangeReplaceableCollection { }
 
-
-
-extension Array: SMutableArray { }
-
-
+extension Array: SMutableArray, SAnyArray { }
 
 // MARK - Generic equatable operators
 public func ==<Ary, Element>(lhs: Ary, rhs: Array<Element>) -> Bool where Ary: SArray, Ary.Element == Element, Element: Equatable {
