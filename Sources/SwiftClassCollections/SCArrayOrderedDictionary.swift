@@ -23,25 +23,12 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         ///
         /// Hash values are not guaranteed to be equal across different executions of
         /// your program. Do not save hash values to use during a future execution.
+        /// After Swift 4.0 Hashable can be inferred on structs that have all hashable properties
+        /// With Swift 4.2 and above, the moveis from hashValue to hash(into:)
+        #if !swift(>=4.1)
         public var hashValue: Int { return self.offset.hashValue }
-        /// Hashes the essential components of this value by feeding them into the
-        /// given hasher.
-        ///
-        /// Implement this method to conform to the `Hashable` protocol. The
-        /// components used for hashing must be the same as the components compared
-        /// in your type's `==` operator implementation. Call `hasher.combine(_:)`
-        /// with each of these components.
-        ///
-        /// - Important: Never call `finalize()` on `hasher`. Doing so may become a
-        ///   compile-time error in the future.
-        ///
-        /// - Parameter hasher: The hasher to use when combining the components
-        ///   of this instance.
-        #if swift(>=5.0)
-        public func hash(into hasher: inout Hasher) {
-            self.offset.hash(into: &hasher)
-        }
         #endif
+        
         
         /// Returns the distance from this value to the given value, expressed as a
         /// stride.
