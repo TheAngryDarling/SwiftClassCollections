@@ -7,25 +7,25 @@
 
 import Foundation
 
-/*
- A class dictionary that keeps order based on when items were added.
- This is good when you need to keep your dictionaries in a specific order
-*/
+
+/// A class dictionary that keeps order based on when items were added.
+/// This is good when you need to keep your dictionaries in a specific order
 public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
     
     public typealias Element = (key: Key, value: Value)
     
+    /// The index type for dictionary.
     public struct Index: Comparable, Hashable, Strideable {
         fileprivate let offset: Int
         fileprivate init(_ offset: Int) { self.offset = offset }
         
+        #if !swift(>=4.1)
         /// The hash value.
         ///
         /// Hash values are not guaranteed to be equal across different executions of
         /// your program. Do not save hash values to use during a future execution.
         /// After Swift 4.0 Hashable can be inferred on structs that have all hashable properties
-        /// With Swift 4.2 and above, the moveis from hashValue to hash(into:)
-        #if !swift(>=4.1)
+        /// With Swift 4.2 and above, the moves from hashValue to hash(into:)
         public var hashValue: Int { return self.offset.hashValue }
         #endif
         
@@ -403,12 +403,18 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         
     }
     
+    /// Initial capacity of a Dictionary
     private let INIT_CAP: Int = 3
+    
+    /// Minimum capacity of a Dictionary
     private let MINIMUN_CAP: Int = 12
     
+    /// Actual storage of items
     fileprivate var storage: Array<(Key, Value)>
     
+    /// A collection containing just the keys of the dictionary.
     public var keys: Keys  { return Keys(self) }
+    /// A collection containing just the values of the dictionary.
     public var values: Values {
         get { return Values(self) }
         set {
@@ -440,17 +446,33 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         self.storage.reserveCapacity(INIT_CAP)
     }
     
+    /// Creates an empty dictionary.
     public init() {
         self.storage = Array<(Key, Value)>()
         self.storage.reserveCapacity(INIT_CAP)
     }
     
+    /// Creates an empty dictionary with preallocated space for at least the specified number of elements.
+    ///
+    /// - Parameter minimumCapacity: The minimum number of key-value pairs that the newly created dictionary should be able to store without reallocating its storage buffer.
+    public init(minimumCapacity: Int) {
+        self.storage = Array<(Key, Value)>()
+        self.storage.reserveCapacity(minimumCapacity)
+    }
     
+    /// Creates a new dictionary from the key-value pairs in the given sequence.
+    ///
+    /// - Parameter keysAndValues: A sequence of key-value pairs to use for the new dictionary. Every key in keysAndValues must be unique.
     public init<S>(uniqueKeysWithValues keysAndValues: S) where S : Sequence, S.Element == (Key, Value) {
         self.storage = Array<(Key, Value)>(keysAndValues)
         self.storage.reserveCapacity(INIT_CAP)
     }
     
+    /// Creates a new dictionary from the key-value pairs in the given sequence, using a combining closure to determine the value for any duplicate keys.
+    ///
+    /// - Parameter:
+    ///   - keysAndValues: A sequence of key-value pairs to use for the new dictionary.
+    ///   - combine: A closure that is called with the values for any duplicate keys that are encountered. The closure returns the desired value for the final dictionary.
     public init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Element == (Key, Value) {
         self.storage = Array<(Key, Value)>()
         self.storage.reserveCapacity(INIT_CAP)
@@ -463,6 +485,10 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         }
     }
     
+    /// Accesses the value associated with the given key for reading and writing.
+    ///
+    /// - Parameter key: The key to find in the dictionary.
+    /// - Returns: The value associated with key if key is in the dictionary; otherwise, nil.
     public subscript(key: Key) -> Value? {
         get {
             for v in self.storage {
@@ -488,8 +514,14 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         }
     }
     
+    /// Accesses the value with the given key. If the dictionary doesn’t contain the given key, accesses the provided default value as if the key and default value existed in the dictionary.
+    ///
+    /// - Parameters:
+    ///   - key: The key the look up in the dictionary.
+    ///   - defaultValue: The default value to use if key doesn’t exist in the dictionary.
+    /// - Returns: The value associated with key in the dictionary; otherwise,defaultValue`
     public subscript(key: Key,
-        default defaultValue: @autoclosure () -> Value) -> Value {
+                     default defaultValue: @autoclosure () -> Value) -> Value {
         get {
             for v in self.storage {
                 if v.0 == key { return v.1}
@@ -512,6 +544,10 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
     
     
     
+    /// Accesses the value associated with the given key for reading.
+    ///
+    /// - Parameter key: The key to find in the dictionary.
+    /// - Returns: The value associated with key if key is in the dictionary; otherwise, nil.
     public func index(forKey key: Key) -> Index? {
         for i in 0..<self.storage.count {
             if self.storage[i].0 == key { return Index(i) }
@@ -519,8 +555,13 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         return nil
     }
     
-    @discardableResult
-    public func updateValue(_ value: Value, forKey key: Key) -> Value? {
+    /// Updates the value stored in the dictionary for the given key, or adds a new key-value pair if the key does not exist.
+    ///
+    /// - Parameters:
+    ///   - value: The new value to add to the dictionary.
+    ///   - key: The key to associate with value. If key already exists in the dictionary, value replaces the existing associated value. If key isn’t already a key of the dictionary, the (key, value) pair is added.
+    /// - Returns: The value that was replaced, or nil if a new key-value pair was added.
+    @discardableResult public func updateValue(_ value: Value, forKey key: Key) -> Value? {
         var oldValue: Value? = nil
         var hasFound: Bool = false
         for i in 0..<self.storage.count {
@@ -537,6 +578,11 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         return oldValue
     }
     
+    /// Merges the given dictionary into this dictionary, using a combining closure to determine the value for any duplicate keys.
+    ///
+    /// - Parameters:
+    ///   - other: A dictionary to merge.
+    ///   - combine: A closure that takes the current and new values for any duplicate keys. The closure returns the desired value for the final dictionary.
     public func merge(_ other: SCArrayOrderedDictionary<Key, Value>,
                       uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
         for (k,v) in other {
@@ -548,6 +594,11 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         }
     }
     
+    /// Merges the given dictionary into this dictionary, using a combining closure to determine the value for any duplicate keys.
+    ///
+    /// - Parameters:
+    ///   - other: A dictionary to merge.
+    ///   - combine: A closure that takes the current and new values for any duplicate keys. The closure returns the desired value for the final dictionary.
     public func merge<S>(_ other: S,
                          uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Element == (Key, Value) {
         for (k,v) in other {
@@ -559,6 +610,12 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         }
     }
     
+    /// Creates a dictionary by merging the given dictionary into this dictionary, using a combining closure to determine the value for duplicate keys.
+    ///
+    /// - Parameters:
+    ///   - other: A dictionary to merge.
+    ///   - combine: A closure that takes the current and new values for any duplicate keys. The closure returns the desired value for the final dictionary.
+    /// - Returns: A new dictionary with the combined keys and values of this dictionary and other.
     public func merging(_ other: SCArrayOrderedDictionary<Key, Value>,
                         uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> SCArrayOrderedDictionary<Key, Value> {
         let rtn = SCArrayOrderedDictionary<Key, Value>(self.storage)
@@ -573,6 +630,12 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         
     }
     
+    /// Creates a dictionary by merging the given dictionary into this dictionary, using a combining closure to determine the value for duplicate keys.
+    ///
+    /// - Parameters:
+    ///   - other: A dictionary to merge.
+    ///   - combine: A closure that takes the current and new values for any duplicate keys. The closure returns the desired value for the final dictionary.
+    /// - Returns: A new dictionary with the combined keys and values of this dictionary and other.
     public func merging<S>(_ other: S,
                            uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> SCArrayOrderedDictionary<Key, Value> where S : Sequence, S.Element == (Key, Value) {
         let rtn = SCArrayOrderedDictionary<Key, Value>(self.storage)
@@ -586,6 +649,9 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         return rtn
     }
     
+    /// Reserves enough space to store the specified number of key-value pairs.
+    ///
+    /// - Parameter minimumCapacity: The requested number of key-value pairs to store.
     public func reserveCapacity(_ minimumCapacity: Int) {
         guard minimumCapacity >= MINIMUN_CAP else {
             self.storage.reserveCapacity(MINIMUN_CAP)
@@ -594,6 +660,10 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         self.storage.reserveCapacity(minimumCapacity)
     }
     
+    /// Returns a new dictionary containing the key-value pairs of the dictionary that satisfy the given predicate.
+    ///
+    /// - Parameter isIncluded: A closure that takes a key-value pair as its argument and returns a Boolean value indicating whether the pair should be included in the returned dictionary.
+    /// - Returns: A dictionary of the key-value pairs that isIncluded allows.
     public func filter(_ isIncluded: (Element) throws -> Bool) rethrows -> SCArrayOrderedDictionary<Key, Value> {
         let rtn: SCArrayOrderedDictionary<Key, Value> = SCArrayOrderedDictionary<Key, Value>()
         for v in self.storage {
@@ -604,7 +674,11 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         return rtn
     }
     
-    public func removeValue(forKey key: Key) -> Value? {
+    /// Removes the given key and its associated value from the dictionary.
+    ///
+    /// - Parameter key: The key to remove along with its associated value.
+    /// - Returns: The value that was removed, or nil if the key was not present in the dictionary.
+    @discardableResult public func removeValue(forKey key: Key) -> Value? {
        
         for i in 0..<self.storage.count {
             if self.storage[i].0 == key {
@@ -616,9 +690,16 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         
         return nil
     }
+    
+    /// Removes all key-value pairs from the dictionary.
+    ///
+    /// - Parameter keepCapacity: Whether the dictionary should keep its underlying buffer. If you pass true, the operation preserves the buffer capacity that the collection has, otherwise the underlying buffer is released. The default is false.
     public func removeAll(keepingCapacity keepCapacity: Bool = false) { self.storage.removeAll(keepingCapacity: keepCapacity) }
     
-    
+    /// Returns a new dictionary containing the keys of this dictionary with the values transformed by the given closure.
+    ///
+    /// - Parameter transform: A closure that transforms a value. transform accepts each value of the dictionary as its parameter and returns a transformed value of the same or of a different type.
+    /// - Returns: A dictionary containing the keys and transformed values of this dictionary.
     public func mapValues<T>(_ transform: (Value) throws -> T) rethrows -> SCArrayOrderedDictionary<Key, T> {
         let rtn: SCArrayOrderedDictionary<Key, T> = SCArrayOrderedDictionary<Key, T>()
         for v in self.storage {
@@ -627,6 +708,9 @@ public final class SCArrayOrderedDictionary<Key, Value> where Key: Hashable {
         return rtn
     }
     
+    /// Removes and returns the first element of the collection.
+    ///
+    /// - Returns: The first element of the collection if the collection is not empty; otherwise, nil.
     public func popFirst() -> (key: Key, value: Value)? {
         guard self.storage.count > 0 else { return nil }
         return self.storage.removeFirst()
@@ -658,59 +742,11 @@ extension SCArrayOrderedDictionary: Collection {
         set { self.storage[position.offset] = newValue }
     }
     
-    // Returns an iterator over the elements of the collection.
-    //public func makeIterator() -> LazySCOrderedDictionaryIterator<Key, Value> { return LazySCOrderedDictionaryIterator(self) }
     // Returns the position immediately after the given index.
     public func index(after i: Index) -> Index { return Index(self.storage.index(after: i.offset)) }
     // Removes and returns the element at the specified position.
     public func remove(at index: Index) -> Element { return self.storage.remove(at: index.offset) }
     
-    
-    /*
-    public func split(maxSplits: Int = Int.max,
-                      omittingEmptySubsequences: Bool = true,
-                      whereSeparator isSeparator: ((key: Key, value: Value)) throws -> Bool) rethrows -> [Slice<SCArrayOrderedDictionary<Key, Value>>] {
-        return try self.storage.split(maxSplits: maxSplits,
-                                      omittingEmptySubsequences: omittingEmptySubsequences,
-                                      whereSeparator: isSeparator)
-    }
-    
-    public func prefix(through position: Index) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.prefix(through: position)
-    }
-    
-    public func prefix(upTo end: Index) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.prefix(upTo: end)
-    }
-    
-    public func prefix(while predicate: ((key: Key, value: Value)) throws -> Bool) rethrows -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return try self.storage.prefix(while: predicate)
-    }
-    
-    public func prefix(_ maxLength: Int) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.prefix(maxLength)
-    }
-    
-    public func suffix(from start: Index) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.suffix(from: start)
-    }
-    
-    public func suffix(_ maxLength: Int) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.suffix(maxLength)
-    }
-    
-    public func drop(while predicate: ((key: Key, value: Value)) throws -> Bool) rethrows -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return try self.storage.drop(while: predicate)
-    }
-    
-    public func dropLast(_ k: Int) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.dropLast(k)
-    }
-    
-    public func dropFirst(_ k: Int) -> Slice<SCArrayOrderedDictionary<Key, Value>> {
-        return self.storage.dropFirst(k)
-    }
-    */
 }
 
 // MARK: - Conformance -- CustomStringConvertible
@@ -738,12 +774,21 @@ extension SCArrayOrderedDictionary: CustomStringConvertible {
 
 // MARK: - Conformance -- SMutableArray
 extension SCArrayOrderedDictionary: SMutableDictionary {
+    
     public convenience init<D>(_ dictionary: D) where D : SDictionary, Key == D.Key, Value == D.Value {
         self.init()
         self.reserveCapacity(dictionary.count)
         for (k,v) in dictionary {
             self[k] = v
         }
+    }
+    
+    /// Accesses the element at the specified position.
+    ///
+    /// - Parameter index: The position of the element to access. index must be greater than or equal to Zero and less than count.
+    /// - Returns: returns the elment at the specific index
+    public func item(at index: Int) -> Any {
+        return self.storage[index]
     }
 }
 
