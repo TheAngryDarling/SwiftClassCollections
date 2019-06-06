@@ -10,9 +10,7 @@
 import Foundation
 
 
-/*
- Protocol defining a Swift Array.  This is basicaly a Collection with a new name for standardization
-*/
+/// Protocol defining a Swift Array.  This is basicaly a Collection with a new name for standardization
 public protocol SArray: Collection, SAnyArray where Index == Int {
     init()
     init<S>(_ s: S) where S : Sequence, Element == S.Element
@@ -27,12 +25,9 @@ extension SArray {
 }
 
 
-/*
- Protocol defining a Swift mutable Array.  This is bascially a MutableCollection + SArray with a new name for  standardization
-*/
+/// Protocol defining a Swift mutable Array.
+/// This is bascially a MutableCollection + SArray with a new name for  standardization
 public protocol SMutableArray: SArray, MutableCollection, RangeReplaceableCollection { }
-
-extension Array: SMutableArray, SAnyArray { }
 
 // MARK - Generic equatable operators
 public func ==<Ary, Element>(lhs: Ary, rhs: Array<Element>) -> Bool where Ary: SArray, Ary.Element == Element, Element: Equatable {
@@ -81,3 +76,6 @@ public func ~=<Ary, Element>(lhs: Array<Element>, rhs: Ary) -> Bool where Ary: S
     }
     return true
 }
+
+// Mark: - Implementations
+extension Array: SMutableArray, SAnyArray { }
