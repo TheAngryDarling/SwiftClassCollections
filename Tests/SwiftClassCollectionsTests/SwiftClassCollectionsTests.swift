@@ -63,6 +63,13 @@ class SwiftClassCollectionsTests: XCTestCase {
         return D(uniqueKeysWithValues: ary)
     }
     
+    func createTestDictionary<D>(ofType type: D.Type = D.self) -> D where D: SDictionary, D.Key == String, D.Value == Any {
+        let dict: Dictionary<String, Int> = createTestDictionary(ofType: Dictionary<String, Int>.self)
+        let mappedDict:  Dictionary<String, Any> = dict.mapValues({ return $0 as Any })
+       
+        return D(mappedDict)
+    }
+    
     func createTestArray<A>(ofType type: A.Type = A.self) -> A where A: SArray, A.Element == String {
         var ary = [String] ()
         let startIndex = getLastIndex(ofType: A.self)
@@ -73,6 +80,12 @@ class SwiftClassCollectionsTests: XCTestCase {
         //ary.append("Person A")
         //ary.append("Person B")
         return A(ary)
+    }
+    
+    func createTestArray<A>(ofType type: A.Type = A.self) -> A where A: SArray, A.Element == Any {
+        let ary: Array<String> = createTestArray(ofType: Array<String>.self)
+        let mappedAry: Array<Any> = ary.map({ return $0 as Any })
+        return A(mappedAry)
     }
     
     func testGenericDictionaryIterator<D>(_ dictionary: D) where D: SDictionary {
@@ -375,6 +388,26 @@ class SwiftClassCollectionsTests: XCTestCase {
         testGenericDictionaryIterator(customObject)
     }
     
+    func testReencapsulation() {
+        let originalDictionary = createTestDictionary(ofType: Dictionary<String, Any>.self)
+        let reencapsulatedDictionary = originalDictionary.reencapsulate(dictionaries: SCDictionary<String,Any>.self)
+        let reencapsulatedDictionary2 = reencapsulatedDictionary.reencapsulate(dictionaries: SCArrayOrderedDictionary<String,Any>.self)
+        let orgDictType = "\(type(of: originalDictionary))"
+        let reDictType = "\(type(of: reencapsulatedDictionary))"
+        let reDictType2 = "\(type(of: reencapsulatedDictionary2))"
+        XCTAssertNotEqual(orgDictType, reDictType)
+        XCTAssertNotEqual(orgDictType, reDictType2)
+        XCTAssertEqual(originalDictionary.count, reencapsulatedDictionary.count)
+        XCTAssertEqual(originalDictionary.count, reencapsulatedDictionary2.count)
+        XCTAssertEqual(originalDictionary.keys, reencapsulatedDictionary.keys)
+        
+        let originalArray = createTestArray(ofType: Array<Any>.self)
+        let reencapsulatedArray = originalArray.reencapsulate(arrays: SCArray<Any>.self)
+        let orgArrayType = "\(type(of: originalArray))"
+        let reArrayype = "\(type(of: reencapsulatedArray))"
+        XCTAssertNotEqual(orgArrayType, reArrayype)
+        XCTAssertEqual(originalArray.count, reencapsulatedArray.count)
+    }
     
     
 #if swift(>=4.1)
@@ -439,6 +472,7 @@ class SwiftClassCollectionsTests: XCTestCase {
         #if swift(>=4.1)
         rtn.append(("testOrderedArrayCoding", SwiftClassCollectionsTests.testOrderedArrayCoding))
         #endif
+        rtn.append(("testReencapsulation", SwiftClassCollectionsTests.testReencapsulation))
         
         return rtn
     }

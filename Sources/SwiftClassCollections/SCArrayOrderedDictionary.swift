@@ -792,6 +792,15 @@ extension SCArrayOrderedDictionary: SMutableDictionary {
     }
 }
 
+// MARK: - Conformance -- ReEncapsulatable
+extension SCArrayOrderedDictionary: ReEncapsulatableCollecton, ReEncapsulatableDictionary {
+    public static var ReEncapsulateType: ReEncapsulateDictionary {
+        return .arrayOrderedDictionary
+    }
+    
+    
+}
+
 // MARK: - Conditional conformance
 #if swift(>=4.1)
 extension SCArrayOrderedDictionary where Key: Hashable  {

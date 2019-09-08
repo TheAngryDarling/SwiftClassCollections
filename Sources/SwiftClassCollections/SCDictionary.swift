@@ -309,6 +309,15 @@ extension SCDictionary: SMutableDictionary {
     
 }
 
+// MARK: - Conformance -- ReEncapsulatable
+extension SCDictionary: ReEncapsulatableCollecton, ReEncapsulatableDictionary {
+    public static var ReEncapsulateType: ReEncapsulateDictionary {
+        return .classDictionary
+    }
+    
+    
+}
+
 
 // MARK: - Conditional conformance
 #if swift(>=4.1)

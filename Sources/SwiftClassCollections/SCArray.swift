@@ -228,6 +228,13 @@ extension SCArray: CustomReflectable {
 // MARK: - Conformance -- SMutableArray
 extension SCArray: SMutableArray { }
 
+// MARK: - Conformance -- ReEncapsulatable
+extension SCArray: ReEncapsulatableCollecton, ReEncapsulatableArray {
+    public static var ReEncapsulateType: ReEncapsulateArray {
+        return .classArray
+    }
+}
+
 
 // MARK: - Conditional conformance
 #if swift(>=4.1)

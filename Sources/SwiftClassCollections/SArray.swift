@@ -17,10 +17,118 @@ public protocol SArray: Collection, SAnyArray where Index == Int {
     init(repeating repeatedValue: Element, count: Int)
 }
 
-extension SArray {
-    public var elementType: Any.Type { return Element.self }
-    public func item(at index: Int) -> Any {
+public extension SArray {
+    
+    var elementType: Any.Type { return Element.self }
+    func item(at index: Int) -> Any {
         return self[index]
+    }
+}
+
+internal extension SArray {
+    func _reencapsulate(dictionariesTo: ReEncapsulateDictionary, arraysTo: ReEncapsulateArray) -> Any {
+        var ary = Array<Element>()
+        for e in self {
+            guard let r = e as? ReEncapsulatableCollecton else {
+                ary.append(e)
+                continue
+            }
+            ary.append((r._reencapsulate(dictionariesTo: dictionariesTo, arraysTo: arraysTo)) as! Element)
+        }
+        switch arraysTo {
+            case .array: return ary
+            case .classArray: return SCArray<Element>(ary)
+        }
+    }
+    
+    func _reencapsulate(dictionariesTo: ReEncapsulateDictionary) -> Any {
+        var ary = Array<Element>()
+        for e in self {
+            guard let r = e as? ReEncapsulatableCollecton else {
+                ary.append(e)
+                continue
+            }
+            ary.append((r._reencapsulate(dictionariesTo: dictionariesTo)) as! Element )
+        }
+        return type(of: self).init(ary)
+    }
+    
+    func _reencapsulate(arraysTo: ReEncapsulateArray) -> Any {
+        var ary = Array<Element>()
+        for e in self {
+            guard let r = e as? ReEncapsulatableCollecton else {
+                ary.append(e)
+                continue
+            }
+            ary.append((r._reencapsulate(arraysTo: arraysTo)) as! Element )
+        }
+        switch arraysTo {
+            case .array: return ary
+            case .classArray: return SCArray<Element>(ary)
+        }
+    }
+}
+
+public extension SArray where Element == Any {
+    /// Re-Encapsulate any Array/Dictionary from one type to another
+    ///
+    /// - Parameters:
+    ///   - dictionariesTo: what object to build dictionaries into
+    ///   - arraysTo: what object to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate(dictionariesTo: ReEncapsulateDictionary, arraysTo: ReEncapsulateArray) -> Any {
+        return self._reencapsulate(dictionariesTo: dictionariesTo, arraysTo: arraysTo)
+    }
+    
+    /// Re-Encapsulate any dictionaries from one type to another
+    ///
+    /// - Parameters:
+    ///   - dictionariesTo: what object to build dictionaries into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate(dictionariesTo: ReEncapsulateDictionary) -> Any {
+        return self._reencapsulate(dictionariesTo: dictionariesTo)
+    }
+    
+    /// Re-Encapsulate any arrays from one type to another
+    ///
+    /// - Parameters:
+    ///   - arraysTo: what object to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate(arraysTo: ReEncapsulateArray) -> Any {
+       return self._reencapsulate(arraysTo: arraysTo)
+    }
+    
+    /// Provides a defualt to reencapsulate which converts object to standard swift arrays and dictionaries
+    func reencapsulateToSwift() -> Any {
+        return self._reencapsulate(dictionariesTo: .dictionary, arraysTo: .array)
+    }
+    
+    /// Re-Encapsulate the array to a difference container type
+    ///
+    /// - Parameters:
+    ///   - dictionaries: what object type to build dictionaries into
+    ///   - arrays: what object type to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate<A, D>(dictionaries: D.Type, arrays: A.Type) -> A where D: ReEncapsulatableDictionary, A: ReEncapsulatableArray, A.Element == Element {
+        return self.reencapsulate(dictionariesTo: D.ReEncapsulateType, arraysTo: A.ReEncapsulateType) as! A
+    }
+    
+    /// Re-Encapsulate any child dictionaries to a difference container type
+    ///
+    /// - Parameters:
+    ///   - dictionaries: what object type to build dictionaries into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate<D>(dictionaries: D.Type) -> Self where D: ReEncapsulatableDictionary {
+        return self.reencapsulate(dictionariesTo: D.ReEncapsulateType) as! Self
+    }
+    
+    /// Re-Encapsulate the array and child arrays to a difference container type
+    ///
+    /// - Parameters:
+    ///   - arrays: what object type to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate<A>(arrays: A.Type) -> A where A: ReEncapsulatableArray, A.Element == Element {
+        return self.reencapsulate(arraysTo: A.ReEncapsulateType) as! A
     }
 }
 

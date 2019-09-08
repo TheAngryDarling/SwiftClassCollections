@@ -20,8 +20,6 @@ public protocol SDictionary: Collection, SAnyDictionary where Element == (key: K
     associatedtype Keys: Collection, Equatable where Keys.Element == Key, Keys.Index == Self.Index
     /// A view of a dictionary’s values.
     associatedtype Values : Collection where Values.Element == Value, Values.Index == Self.Index
-    
-    
 
     /// A collection containing just the keys of the dictionary.
     var keys: Keys { get }
@@ -79,6 +77,116 @@ public extension SDictionary {
             fatalError("Unable to cast '\(key)' to \(Key.self)")
         }
         return self[k]
+    }
+}
+
+internal extension SDictionary {
+    func _reencapsulate(dictionariesTo: ReEncapsulateDictionary, arraysTo: ReEncapsulateArray) -> Any {
+        
+        let dict = SCArrayOrderedDictionary<Key, Value>() // We use SCArrayOrderedDictionary to keep the same order as the origional dictionary
+        for (k,v) in self {
+            guard let r = v as? ReEncapsulatableCollecton else {
+                dict[k] = v
+                continue
+            }
+            dict[k] = (r._reencapsulate(dictionariesTo: dictionariesTo, arraysTo: arraysTo) as! Value)
+        }
+        switch dictionariesTo {
+            case .dictionary: return Dictionary<Key, Value>(dict)
+            case .classDictionary: return SCDictionary<Key, Value>(dict)
+            case .arrayOrderedDictionary: return dict
+        }
+    }
+    
+    func _reencapsulate(dictionariesTo: ReEncapsulateDictionary) -> Any {
+        let dict = SCArrayOrderedDictionary<Key, Value>() // We use SCArrayOrderedDictionary to keep the same order as the origional dictionary
+        for (k,v) in self {
+            guard let r = v as? ReEncapsulatableCollecton else {
+                dict[k] = v
+                continue
+            }
+            dict[k] = (r._reencapsulate(dictionariesTo: dictionariesTo) as! Value)
+        }
+        switch dictionariesTo {
+            case .dictionary: return Dictionary<Key, Value>(dict)
+            case .classDictionary: return SCDictionary<Key, Value>(dict)
+            case .arrayOrderedDictionary: return dict
+        }
+    }
+    
+    func _reencapsulate(arraysTo: ReEncapsulateArray) -> Any {
+        let dict = SCArrayOrderedDictionary<Key, Value>() // We use SCArrayOrderedDictionary to keep the same order as the origional dictionary
+        for (k,v) in self {
+            guard let r = v as? ReEncapsulatableCollecton else {
+                dict[k] = v
+                continue
+            }
+            dict[k] = (r._reencapsulate(arraysTo: arraysTo) as! Value)
+        }
+        return type(of: self).init(dict)
+    }
+}
+
+public extension SDictionary where Value == Any {
+    /// Re-Encapsulate any Array/Dictionary from one type to another
+    ///
+    /// - Parameters:
+    ///   - dictionariesTo: what object to build dictionaries into
+    ///   - arraysTo: what object to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate(dictionariesTo: ReEncapsulateDictionary, arraysTo: ReEncapsulateArray) -> Any {
+        return self._reencapsulate(dictionariesTo: dictionariesTo, arraysTo: arraysTo)
+    }
+    
+    /// Re-Encapsulate any dictionaries from one type to another
+    ///
+    /// - Parameters:
+    ///   - dictionariesTo: what object to build dictionaries into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate(dictionariesTo: ReEncapsulateDictionary) -> Any {
+        return self._reencapsulate(dictionariesTo: dictionariesTo)
+    }
+    
+    /// Re-Encapsulate any arrays from one type to another
+    ///
+    /// - Parameters:
+    ///   - arraysTo: what object to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate(arraysTo: ReEncapsulateArray) -> Any {
+        return self._reencapsulate(arraysTo: arraysTo)
+    }
+    
+    /// Provides a defualt to reencapsulate which converts object to standard swift arrays and dictionaries
+    func reencapsulateToSwift() -> Any {
+        return self._reencapsulate(dictionariesTo: .dictionary, arraysTo: .array)
+    }
+    
+    /// Re-Encapsulate the array to a difference container type
+    ///
+    /// - Parameters:
+    ///   - dictionaries: what object type to build dictionaries into
+    ///   - arrays: what object type to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate<A, D>(dictionaries: D.Type, arrays: A.Type) -> D where D: ReEncapsulatableDictionary, A: ReEncapsulatableArray, D.Key == Key, D.Value == Value {
+        return self.reencapsulate(dictionariesTo: D.ReEncapsulateType, arraysTo: A.ReEncapsulateType) as! D
+    }
+    
+    /// Re-Encapsulate the dictionary and any child dictionaries to a difference container type
+    ///
+    /// - Parameters:
+    ///   - dictionaries: what object type to build dictionaries into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate<D>(dictionaries: D.Type) -> D where D: ReEncapsulatableDictionary {
+        return self.reencapsulate(dictionariesTo: D.ReEncapsulateType) as! D
+    }
+    
+    /// Re-Encapsulate any child arrays to a difference container type
+    ///
+    /// - Parameters:
+    ///   - arrays: what object type to build arrays into
+    /// - Returns: The newly created object for the given types
+    func reencapsulate<A>(arrays: A.Type) -> Self where A: ReEncapsulatableArray, A.Element == Element {
+        return self.reencapsulate(arraysTo: A.ReEncapsulateType) as! Self
     }
 }
 
